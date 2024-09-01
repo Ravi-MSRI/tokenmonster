@@ -2598,7 +2598,7 @@ func (vocab *Vocab) HighestTokenID() int {
 
 // --------- LOADING AND SAVING ---------
 
-func (vocab Vocab) SaveWithMapping(outputFilename string, mapping []int) error {
+func (vocab Vocab) SaveWithMapping(outputFilename string, mapping []uint32) error {
     fi, err := os.Create(outputFilename)
     if err != nil {
         return err
@@ -2626,6 +2626,7 @@ func (vocab Vocab) SaveWithMapping(outputFilename string, mapping []int) error {
 	w.WriteByte(uint8(vocab.maxTokenLength))
 
     for _, i := range mapping {
+	modI := int(i)
         token:= vocab.info[i]
 		w.WriteBytes8(token.token) // a single byte (uint8) specifying length of token bytes, and then that many bytes
 		w.WriteByte(token.alt.data.flag)
