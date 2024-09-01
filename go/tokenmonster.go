@@ -2627,7 +2627,7 @@ func (vocab Vocab) SaveWithMapping(outputFilename string, mapping []uint32) erro
 
     for _, i := range mapping {
 	modI := int(i)
-        token:= vocab.info[i]
+        token:= vocab.info[modI]
 		w.WriteBytes8(token.token) // a single byte (uint8) specifying length of token bytes, and then that many bytes
 		w.WriteByte(token.alt.data.flag)
 		w.WriteByte(token.alt.data.nWords)
