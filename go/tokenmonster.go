@@ -2598,6 +2598,62 @@ func (vocab *Vocab) HighestTokenID() int {
 
 // --------- LOADING AND SAVING ---------
 
+func (vocab Vocab) SaveWithMapping(outputFilename string, mapping []int) error {
+    fi, err := os.Create(outputFilename)
+    if err != nil {
+        return err
+    }
+    defer fi.Close()
+    w := custom.NewWriter(fi)
+    defer w.Close()
+
+    // Write header information
+	w.WriteByte(vocab.usingCapcode)
+	w.WriteByte(vocab.charset)
+	w.WriteByte(vocab.normalizer.Flag)
+	w.WriteByte(vocab.level)
+	w.WriteByte(vocab.reserve)
+	w.WriteByte(0) // reserved
+	w.WriteByte(0) // reserved
+	w.WriteByte(0) // reserved
+
+    // Write vocabulary metadata
+	w.WriteUint24(vocab.unkToken)
+	w.WriteUint24(uint32(vocab.vocabSize))
+	w.WriteUint24(uint32(len(vocab.reverse)))
+	w.WriteUint24(uint32(len(vocab.info)))
+	w.WriteUint24(vocab.deleteToken)
+	w.WriteByte(uint8(vocab.maxTokenLength))
+
+    for _, i := range mapping {
+        token:= vocab.info[i]
+		w.WriteBytes8(token.token) // a single byte (uint8) specifying length of token bytes, and then that many bytes
+		w.WriteByte(token.alt.data.flag)
+		w.WriteByte(token.alt.data.nWords)
+		// Write the index of the token
+		w.WriteUint24(token.alt.index)
+		w.WriteUint24(token.alt.index2)
+		w.WriteUint24(token.alt.id)
+		// // The index of the token should always be less than the current index (because the list is sorted), check this is true
+		// if (token.alt.index > uint32(i) && token.alt.index != DOES_NOT_EXIST) || (token.alt.index2 > uint32(i) && token.alt.index2 != DOES_NOT_EXIST) {
+		// 	return errors.New(`Vocabulary is corrupt and cannot be saved`)
+		// }
+		w.WriteFloat32(token.score)
+	}
+
+	for i:=0; i<256; i++ {
+		w.WriteByte(vocab.beginByte[i])
+	}
+
+	w.WriteUint24(uint32(len(vocab.deleted)))
+	for _, deleted := range vocab.deleted {
+		w.WriteBytes8(deleted.token)
+		w.WriteUint24(deleted.id)
+		w.WriteFloat32(deleted.score)
+	}
+	return nil
+}
+
 // Save the vocabulary to local file.
 func (vocab Vocab) Save(outputFilename string) error {
 	fi, err := os.Create(outputFilename)
